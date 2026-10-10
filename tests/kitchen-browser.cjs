@@ -1,0 +1,36 @@
+// Optional browser checks: requires Playwright and Chromium. No network requests.
+const {chromium}=require('playwright');
+const assert=require('node:assert/strict');
+const http=require('node:http');
+const fs=require('node:fs');
+const path=require('node:path');
+(async()=>{
+ const root=path.resolve(__dirname,'..');
+ const server=http.createServer((req,res)=>{const requested=decodeURIComponent(req.url.split('?')[0]),file=path.resolve(root,'.'+requested+(requested.endsWith('/')?'index.html':''));if(!file.startsWith(root+path.sep)){res.writeHead(403);res.end();return;}try{const content=fs.readFileSync(file);res.setHeader('Content-Type',file.endsWith('.js')?'application/javascript':file.endsWith('.css')?'text/css':'text/html');res.end(content);}catch{res.writeHead(404);res.end();}});
+ await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));const url=`http://127.0.0.1:${server.address().port}/kitchen/`;
+ const browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH||'/usr/bin/chromium',headless:true,args:['--no-sandbox','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
+ const desktop=await browser.newContext({viewport:{width:1440,height:1000},acceptDownloads:true});
+ const page=await desktop.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.goto(url);await page.waitForTimeout(500);
+ assert.equal(await page.locator('#errors').isVisible(),false);assert.match(await page.locator('#metrics').innerText(),/74/);
+ assert.ok(await page.evaluate(()=>!!document.querySelector('#scene').getContext('webgl')),'WebGL should run');
+ await page.screenshot({path:'/tmp/kitchen-desktop.png'});
+ await page.locator('[data-path="layout"]').selectOption('corner');assert.equal(await page.locator('#errors').isVisible(),false);assert.match(await page.locator('#metrics').innerText(),/12/);
+ await page.screenshot({path:'/tmp/kitchen-corner.png'});
+ await page.locator('[data-card]').first().locator('summary').click();
+ await page.locator('[data-card]').first().locator('[data-field="width"]').fill('750');assert.equal(await page.locator('#errors').isVisible(),true);assert.equal(await page.locator('#invalid-scene').isVisible(),true);assert.equal(await page.locator('#csv').isEnabled(),false);
+ await page.locator('[data-card]').first().locator('[data-field="width"]').fill('1000');assert.equal(await page.locator('#errors').isVisible(),false);
+ await page.locator('[data-step="decor"]').click();await page.locator('[data-scope="decor"][data-index="lower"]').selectOption('custom');await page.locator('[data-scope="decorValue"][data-field="name"]').fill('Мой зелёный');await page.locator('[data-scope="decorValue"][data-field="color"]').fill('#426050');
+ await page.locator('[data-image="backsplash"]').setInputFiles('/tmp/kitchen-desktop.png');await page.waitForFunction(()=>JSON.parse(localStorage.getItem('mebel-kitchen-v05'))?.decors?.backsplash?.image);
+ await page.locator('[data-step="light"]').click();await page.locator('[data-light="evening"]').click();await page.screenshot({path:'/tmp/kitchen-evening.png'});
+ const downloadPromise=page.waitForEvent('download');await page.locator('#save').click();const download=await downloadPromise;await download.saveAs('/tmp/kitchen-project.json');
+ await page.reload();await page.waitForTimeout(400);assert.match(await page.locator('#metrics').innerText(),/12/);
+ await page.locator('#load').setInputFiles('/tmp/kitchen-project.json');await page.waitForTimeout(400);assert.equal(await page.locator('#errors').isVisible(),false);
+ const csvPromise=page.waitForEvent('download');await page.locator('#csv').click();assert.match((await csvPromise).suggestedFilename(),/csv$/);
+ await page.locator('[data-step="modules"]').click();await page.locator('[data-path="layout"]').selectOption('straight');await page.locator('[data-card]').nth(1).locator('summary').click();await page.locator('[data-card]').nth(1).locator('[data-field="type"]').selectOption('drawers');assert.equal(await page.locator('#errors').isVisible(),false);assert.equal(await page.locator('[data-card]').nth(1).locator('[data-field="drawers"]').isVisible(),true);
+ const mobile=await browser.newContext({viewport:{width:393,height:851},isMobile:true,hasTouch:true,deviceScaleFactor:1});const phone=await mobile.newPage();phone.on('pageerror',e=>errors.push(e.message));await phone.goto(url);await phone.waitForTimeout(400);
+ assert.equal(await phone.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),true,'No horizontal page overflow');
+ await phone.locator('[data-path="layout"]').selectOption('corner');assert.equal(await phone.locator('#errors').isVisible(),false);await phone.locator('[data-step="light"]').click();await phone.locator('[data-light="evening"]').click();await phone.evaluate(()=>window.scrollTo(0,0));await phone.screenshot({path:'/tmp/kitchen-phone.png'});
+ const fallback=await browser.newContext({viewport:{width:393,height:851}});await fallback.addInitScript(()=>{const original=HTMLCanvasElement.prototype.getContext;HTMLCanvasElement.prototype.getContext=function(type,...args){return type==='webgl'?null:original.call(this,type,...args)}});const plan=await fallback.newPage();plan.on('pageerror',e=>errors.push(e.message));await plan.goto(url);assert.match(await plan.locator('#graphics-message').innerText(),/Показан план сверху/);assert.equal(await plan.locator('#errors').isVisible(),false);
+ assert.deepEqual(errors,[]);console.log('Browser checks passed: desktop/WebGL, corner, validation, photo/color, lighting, project/CSV, mobile width, 2D fallback.');await browser.close();server.close();
+})().catch(e=>{console.error(e);process.exit(1)});
