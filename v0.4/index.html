@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#235a49">
+  <meta name="description" content="МебельКальк — простой расчёт деталей корпуса шкафа или тумбы из ЛДСП.">
+  <title>МебельКальк — расчёт корпуса</title>
+  <link rel="stylesheet" href="styles.css">
+  <script defer src="calculator.js"></script>
+  <script defer src="catalog.js"></script>
+  <script defer src="joinery.js"></script>
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <header class="header"><a class="brand" href="./"><span class="logo" aria-hidden="true">▥</span>МебельКальк</a><span class="version">Версия 0.4</span></header>
+  <main>
+    <div class="intro"><p class="eyebrow">ОТ РАЗМЕРОВ К ДЕТАЛЯМ</p><h1>Ваш корпус.<br><span>Точный расчёт.</span></h1><p>Соберите комплектацию: секции, полки, двери и ящики. Декоры, столешница и выбранная фурнитура — в одной спецификации.</p></div>
+    <div class="workspace">
+      <section class="card inputs" aria-labelledby="input-title">
+        <div class="section-heading"><span class="step">01</span><h2 id="input-title">Размеры корпуса</h2></div>
+        <p class="muted">Все размеры — в миллиметрах.</p>
+        <form id="calculator" novalidate>
+          <div class="field"><label for="width">Ширина <span>мм</span></label><input id="width" name="width" type="text" inputmode="numeric" value="800" autocomplete="off" aria-describedby="width-error"><p class="error" id="width-error"></p></div>
+          <div class="field"><label for="height">Высота <span>мм</span></label><input id="height" name="height" type="text" inputmode="numeric" value="720" autocomplete="off" aria-describedby="height-error"><p class="error" id="height-error"></p></div>
+          <div class="field"><label for="depth">Глубина <span>мм</span></label><input id="depth" name="depth" type="text" inputmode="numeric" value="500" autocomplete="off" aria-describedby="depth-error"><p class="error" id="depth-error"></p></div>
+          <fieldset><legend>Толщина ЛДСП</legend><div class="choices"><label><input type="radio" name="thickness" value="16" checked><span>16 мм</span></label><label><input type="radio" name="thickness" value="18"><span>18 мм</span></label></div></fieldset>
+          <details open><summary>Секции и наполнение</summary>
+            <div class="field"><label for="sectionCount">Количество секций</label><input id="sectionCount" name="sectionCount" type="number" min="1" max="12" step="1" value="1" inputmode="numeric" aria-describedby="sectionCount-error"><p class="error" id="sectionCount-error"></p></div>
+            <div class="field"><label for="sectionMode">Ширины секций</label><select id="sectionMode" name="sectionMode"><option value="equal">Равные</option><option value="custom">Задать вручную</option></select></div>
+            <p id="section-hint" class="muted"></p>
+            <div id="sections"></div>
+          </details>
+          <details><summary>Задняя стенка и фасады</summary>
+            <div class="field"><label for="back">Задняя стенка</label><select id="back" name="back"><option value="none">Без задней стенки</option><option value="overlay">Накладная ХДФ</option><option value="inset">Вкладная ХДФ, без паза</option></select></div>
+            <div class="field"><label for="backThickness">Толщина ХДФ, мм</label><input id="backThickness" name="backThickness" inputmode="decimal" value="3" aria-describedby="backThickness-error"><p class="error" id="backThickness-error"></p></div>
+            <div class="field"><label for="backGap">Зазор задней стенки с каждой стороны, мм</label><input id="backGap" name="backGap" inputmode="decimal" value="1" aria-describedby="backGap-error"><p class="error" id="backGap-error"></p></div>
+            <p class="muted">Наружная глубина включает накладную стенку. Вкладная стенка устанавливается заподлицо с задними краями корпуса.</p>
+            <div class="field"><label for="frontMode">Установка фасадов</label><select id="frontMode" name="frontMode"><option value="overlay">Накладные</option><option value="inset">Вкладные</option></select></div>
+            <div class="field"><label for="frontThickness">Толщина фасадов</label><select id="frontThickness" name="frontThickness"><option value="16">16 мм</option><option value="18">18 мм</option></select></div>
+            <div class="field"><label for="frontGap">Зазор фасада с каждой стороны, мм</label><input id="frontGap" name="frontGap" inputmode="decimal" value="2" aria-describedby="frontGap-error"><p class="error" id="frontGap-error"></p></div>
+            <p class="muted">Накладные фасады соседних секций делят перегородку пополам. Между секциями остаётся два зазора, между дверями одной секции — один. Двери и наружные ящики в одной секции не совмещаются.</p>
+          </details>
+          <details><summary>Полки и кромка</summary>
+            <div class="field"><label for="shelfGap">Зазор полки с каждой стороны, мм</label><input id="shelfGap" name="shelfGap" inputmode="decimal" value="1" aria-describedby="shelfGap-error"><p class="error" id="shelfGap-error"></p></div>
+            <div class="field"><label for="shelfInset">Отступ полки от переднего края, мм</label><input id="shelfInset" name="shelfInset" inputmode="decimal" value="20" aria-describedby="shelfInset-error"><p class="error" id="shelfInset-error"></p></div>
+            <label class="check"><input type="checkbox" name="edge" checked> Кромка: передние торцы корпуса и полок, все стороны фасадов</label>
+            <p class="muted">В таблице — готовые размеры деталей. Толщина кромки из размера не вычитается. Длина кромки считается без запаса.</p>
+          </details>
+          <details><summary>Конструкция ящиков</summary>
+            <p class="muted">Деревянный короб с накладным дном, боковые направляющие. Полки располагаются над блоком ящиков. Размеры под конкретную фурнитуру задайте по её инструкции.</p>
+            <div id="drawer-settings"></div>
+            <div class="field"><label for="drawerThickness">Толщина стенок ящика</label><select id="drawerThickness" name="drawerThickness"><option value="16">16 мм</option><option value="18">18 мм</option></select></div>
+          </details>
+          <details open><summary>Крепёж и сверление</summary><div id="joinery-settings"></div><p class="muted">Корпус: 4 соединения верха/низа с боковинами и по 2 на перегородку. Полки: по 2 соединения; количество крепежей на каждом соединении задаётся вами. Крепёж ящиков, фасадов, задней стенки и столешницы добавляйте в фурнитуру отдельно.</p><label class="check"><input type="checkbox" name="drilling"> Построить схемы сверления</label><div id="drill-settings"><p class="muted">Введите размеры по инструкции выбранной модели. Пустые параметры блокируют схемы, но не спецификацию. Шаблон строит цилиндрические отверстия; зенковка, ступенчатое сверление и оснастка требуют отдельного согласования.</p><div class="field"><label for="drillExample">Справочный шаблон эксцентрика</label><select id="drillExample"><option value="custom">Своя модель / Ø16 мм</option><option value="minifix16">Minifix 15 для плиты 16 мм</option><option value="minifix18">Minifix 15 для плиты 18 мм</option></select></div><div id="drill-fields"></div><p class="muted">Minifix: проверены только Ø чашки и номинальная глубина по каталогу. Отступ 24/34 мм и отверстия под шток зависят от выбранного штока. Для Rastex используйте его собственную инструкцию.</p><a class="source-link" href="https://files.hafele.co.uk/catalogfiles/www/14CFC294.pdf" target="_blank" rel="noopener">Каталог Minifix и чертёж</a> · <a class="source-link" href="https://shop.hettich.com/gb_EN/p/73456" target="_blank" rel="noopener">Rastex для плиты 16 мм</a></div></details>
+          <details open><summary>Цвета и декоры</summary><p class="muted">Выберите образец или загрузите фотографию своего декора. Название и код декора попадут в спецификацию. Цвета образцов условные.</p><div id="decor-settings"></div></details>
+          <details><summary>Столешница</summary><label class="check"><input type="checkbox" name="countertop"> Добавить столешницу</label><div id="countertop-settings"></div><p class="muted">Размеры столешницы задаются отдельно и не меняют наружные размеры корпуса. Припуски и свесы включите в её размеры. Кромка столешницы отдельно не рассчитывается.</p></details>
+          <details open><summary>Ручки и другая фурнитура</summary><p class="muted">Ручки, петли, направляющие, ножки, крепёж или другая позиция. Выберите количество вручную либо на каждый фасад, дверь или ящик. Фото и артикул помогут сохранить конкретную модель.</p><div id="hardware-settings"></div><button id="add-hardware" class="secondary" type="button">+ Добавить фурнитуру</button></details>
+          <details><summary>Дополнительные детали</summary>
+            <p class="muted">Добавьте цоколь, столешницу, планку, добор или любую прямоугольную деталь с собственными размерами.</p>
+            <div id="extras"></div><button id="add-extra" class="secondary" type="button">+ Добавить деталь</button>
+          </details>
+          <button type="submit">Рассчитать проект <span aria-hidden="true">↗</span></button>
+          <p class="auto-note">Расчёт обновляется при изменении размеров</p>
+        </form>
+      </section>
+      <section class="card results" aria-labelledby="result-title">
+        <div class="section-heading"><span class="step">02</span><h2 id="result-title">Спецификация деталей</h2></div>
+        <div id="status" class="status" role="status" aria-live="polite"></div>
+        <div id="result-content">
+          <div class="summary"><div><span class="muted">Наружные размеры</span><strong id="dimensions"></strong></div><span class="material" id="material"></span></div>
+          <div class="table-wrap"><table><caption class="sr-only">Детали корпуса из ЛДСП, размеры в миллиметрах</caption><thead><tr><th scope="col">Деталь</th><th scope="col">Размер, мм</th><th scope="col">Материал</th><th scope="col">Декор</th><th scope="col">Кромка*</th><th scope="col">Кол-во</th></tr></thead><tbody id="parts"></tbody></table></div>
+          <div id="decor-summary" class="decor-summary"></div>
+          <section class="hardware-result"><h3>Спецификация фурнитуры</h3><div class="table-wrap"><table><caption class="sr-only">Выбранная фурнитура</caption><thead><tr><th scope="col">Наименование / фото</th><th scope="col">Артикул</th><th scope="col">Примечание</th><th scope="col">Количество</th></tr></thead><tbody id="hardware-parts"></tbody></table></div><p id="hardware-empty" class="muted"></p></section>
+          <div class="total"><span>Всего деталей</span><strong id="total-count"></strong></div>
+          <div class="metrics"><div><span>Площадь деталей</span><strong id="total-area"></strong></div><div><span>Длина кромки</span><strong id="total-edge"></strong></div></div>
+          <ul id="materials" class="material-list"></ul>
+          <p class="muted">* Кромка: число сторон по длине / по ширине. Площадь — сумма деталей без запаса и раскладки по листам.</p>
+          <div class="actions"><button id="download-csv" class="secondary" type="button">Скачать CSV</button><button id="print" class="secondary" type="button">Печать / PDF</button></div>
+          <section id="drilling-result" class="drilling-result"><h3>Схемы сверления</h3><p id="drilling-status" role="status" class="muted"></p><div id="drilling-panels"></div><button type="button" id="download-drilling" class="secondary" hidden>Скачать отверстия CSV</button></section>
+          <div id="warnings" class="warnings"></div>
+          <div class="construction"><div class="drawing" aria-hidden="true"><div class="panel top"></div><div class="panel bottom"></div></div><div><h3>Простая и понятная конструкция</h3><p>Боковины — полной высоты. Верх и низ — между боковинами.</p><p class="formula" id="formula"></p></div></div>
+        </div>
+        <div id="empty-state" hidden><span aria-hidden="true">↖</span><h3>Проверьте размеры</h3><p>Исправьте выделенные поля — спецификация появится автоматически.</p></div>
+      </section>
+    </div>
+    <aside class="scope-note"><span aria-hidden="true">ⓘ</span><p>Расчёт для прямоугольного корпуса с вертикальными секциями. Угловые корпуса, двери-купе, металлические системы ящиков, сверловка и подбор совместимости фурнитуры пока не рассчитываются. Для нестандартных элементов используйте дополнительные детали.</p></aside>
+    <section class="project-tools card"><h2>Ваш проект</h2><p class="muted">Настройки сохраняются в этом браузере. Скачайте проект, чтобы перенести его на другое устройство.</p><div class="actions"><button id="save-project" class="secondary" type="button">Скачать проект</button><label class="file-button">Открыть проект<input id="import-project" type="file" accept=".json,application/json"></label></div><p id="project-status" role="status" class="muted"></p></section>
+  </main>
+  <footer><span>МебельКальк</span><span>Меньше подсчётов. Больше творчества.</span></footer>
+</body>
+</html>
