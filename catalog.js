@@ -14,7 +14,7 @@
   function decor(value) {
     const preset = presets.find(p => p.id === value?.id) || presets[0];
     if (value?.id !== 'custom') return { ...preset, image: '' };
-    return { id: 'custom', name: String(value.name || 'Свой декор').trim().slice(0, 100), color: '#deded6', image: safeImage(value.image) };
+    return { id: 'custom', name: String(value.name || 'Свой декор').trim().slice(0, 100), color: /^#[a-f\d]{6}$/i.test(value.color || '') ? value.color : '#deded6', image: safeImage(value.image) };
   }
   function configure(values, base) {
     const errors = { ...base.errors };
