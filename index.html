@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#235a49">
+  <meta name="description" content="МебельКальк — простой расчёт деталей корпуса шкафа или тумбы из ЛДСП.">
+  <title>МебельКальк — расчёт корпуса</title>
+  <link rel="stylesheet" href="styles.css">
+  <script defer src="calculator.js"></script>
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <header class="header"><a class="brand" href="./"><span class="logo" aria-hidden="true">▥</span>МебельКальк</a><span class="version">Версия 0.1</span></header>
+  <main>
+    <div class="intro"><p class="eyebrow">ОТ РАЗМЕРОВ К ДЕТАЛЯМ</p><h1>Ваш корпус.<br><span>Точный расчёт.</span></h1><p>Укажите наружные размеры шкафа или тумбы — получите готовую спецификацию деталей из ЛДСП.</p></div>
+    <div class="workspace">
+      <section class="card inputs" aria-labelledby="input-title">
+        <div class="section-heading"><span class="step">01</span><h2 id="input-title">Размеры корпуса</h2></div>
+        <p class="muted">Все размеры — в миллиметрах.</p>
+        <form id="calculator" novalidate>
+          <div class="field"><label for="width">Ширина <span>мм</span></label><input id="width" name="width" type="text" inputmode="numeric" value="800" autocomplete="off" aria-describedby="width-error"><p class="error" id="width-error"></p></div>
+          <div class="field"><label for="height">Высота <span>мм</span></label><input id="height" name="height" type="text" inputmode="numeric" value="720" autocomplete="off" aria-describedby="height-error"><p class="error" id="height-error"></p></div>
+          <div class="field"><label for="depth">Глубина <span>мм</span></label><input id="depth" name="depth" type="text" inputmode="numeric" value="500" autocomplete="off" aria-describedby="depth-error"><p class="error" id="depth-error"></p></div>
+          <fieldset><legend>Толщина ЛДСП</legend><div class="choices"><label><input type="radio" name="thickness" value="16" checked><span>16 мм</span></label><label><input type="radio" name="thickness" value="18"><span>18 мм</span></label></div></fieldset>
+          <button type="submit">Рассчитать корпус <span aria-hidden="true">↗</span></button>
+          <p class="auto-note">Расчёт обновляется при изменении размеров</p>
+        </form>
+      </section>
+      <section class="card results" aria-labelledby="result-title">
+        <div class="section-heading"><span class="step">02</span><h2 id="result-title">Спецификация деталей</h2></div>
+        <div id="status" class="status" role="status" aria-live="polite"></div>
+        <div id="result-content">
+          <div class="summary"><div><span class="muted">Наружные размеры</span><strong id="dimensions"></strong></div><span class="material" id="material"></span></div>
+          <div class="table-wrap"><table><caption class="sr-only">Детали корпуса из ЛДСП, размеры в миллиметрах</caption><thead><tr><th scope="col">Деталь</th><th scope="col">Размер, мм</th><th scope="col">Кол-во</th></tr></thead><tbody id="parts"></tbody></table></div>
+          <div class="total"><span>Всего деталей</span><strong>4 <small>шт.</small></strong></div>
+          <div class="construction"><div class="drawing" aria-hidden="true"><div class="panel top"></div><div class="panel bottom"></div></div><div><h3>Простая и понятная конструкция</h3><p>Боковины — полной высоты. Верх и низ — между боковинами.</p><p class="formula" id="formula"></p></div></div>
+        </div>
+        <div id="empty-state" hidden><span aria-hidden="true">↖</span><h3>Проверьте размеры</h3><p>Исправьте выделенные поля — спецификация появится автоматически.</p></div>
+      </section>
+    </div>
+    <aside class="scope-note"><span aria-hidden="true">ⓘ</span><p>В этой версии рассчитываем только корпус: две боковины, верх и низ. Размеры деталей указаны без припусков и поправок на кромку.</p></aside>
+  </main>
+  <footer><span>МебельКальк</span><span>Меньше подсчётов. Больше творчества.</span></footer>
+</body>
+</html>

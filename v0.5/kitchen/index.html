@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#254e43"><meta name="description" content="Конструктор прямой и угловой кухни: модули, столешницы, декоры, 3D и спецификация.">
+  <title>МебельКальк — ваша кухня</title>
+  <link rel="stylesheet" href="style.css">
+  <script defer src="../catalog.js"></script><script defer src="model.js"></script><script defer src="view.js"></script><script defer src="ui.js"></script>
+</head>
+<body>
+<header class="header"><a class="brand" href="../index.html"><span aria-hidden="true">▥</span> МебельКальк</a><nav aria-label="Режим расчёта"><a href="../index.html">Корпус</a><a class="active" href="./" aria-current="page">Кухня</a></nav><span class="version">0.5</span></header>
+<main>
+  <div class="intro"><div><p class="eyebrow">ПРОСТРАНСТВО ДЛЯ ВАШИХ ИДЕЙ</p><h1>Кухня, которую<br>вы придумали.</h1><p>Соберите модули. Подберите материалы и свет.<br>Получите общую спецификацию деталей.</p></div><div class="project-actions"><button id="save" class="secondary">Сохранить проект</button><label class="file-button">Открыть проект<input type="file" id="load" accept=".json,application/json"></label><button id="reset" class="text-button">Новый проект</button><p id="save-status" role="status">Изменения сохраняются на этом устройстве</p></div></div>
+  <div class="workspace">
+    <section class="editor" aria-label="Настройки кухни">
+      <nav class="steps" aria-label="Шаги настройки"><button data-step="modules" class="active">01 Модули</button><button data-step="room">02 Размеры</button><button data-step="decor">03 Декоры</button><button data-step="light">04 Свет</button><button data-step="hardware">05 Фурнитура</button></nav>
+      <div id="panel"></div>
+    </section>
+    <section class="preview" aria-labelledby="preview-title">
+      <div class="preview-head"><div><p class="eyebrow">ВАША КУХНЯ</p><h2 id="preview-title">Посмотрите со всех сторон</h2></div><span class="live"><i></i> Живой расчёт</span></div>
+      <div class="canvas-wrap"><canvas id="scene" tabindex="0" aria-label="Визуализация кухни. Перетаскивайте для поворота, используйте два пальца для масштаба. Стрелки и плюс/минус работают с клавиатуры."></canvas><div id="invalid-scene" hidden>Исправьте размеры, чтобы увидеть кухню</div><div class="scene-badge">МебельКальк · студия кухни</div></div>
+      <div class="view-tools"><div><button data-view="iso" class="active">Объём</button><button data-view="front">Спереди</button><button data-view="top">Сверху</button></div><div><button id="fit" aria-label="Уместить кухню в кадр">В кадр</button><button id="image">Снимок</button></div></div>
+      <p class="view-hint">Поверните одним пальцем · Масштаб — двумя · Нажмите на модуль, чтобы изменить его</p><p id="graphics-message" class="muted" role="status"></p>
+      <div id="metrics" class="metrics"></div>
+    </section>
+  </div>
+  <section class="specification" id="specification" aria-labelledby="spec-title">
+    <div class="spec-head"><div><p class="eyebrow">ОТ ИДЕИ К ДЕТАЛЯМ</p><h2 id="spec-title">Спецификация всей кухни</h2></div><div><button id="csv" class="primary">Скачать таблицу</button><button id="print" class="secondary">Печать / PDF</button></div></div>
+    <div id="errors" class="errors" role="alert" hidden></div><div id="spec-content"></div>
+  </section>
+  <footer>Все размеры в миллиметрах. Визуализация помогает выбрать внешний вид; монтажные размеры техники и фурнитуры проверяются по их инструкциям. <a href="../index.html">Перейти к отдельному корпусу и схемам сверления →</a></footer>
+</main>
+<div id="toast" class="toast" role="status" hidden></div>
+</body>
+</html>
