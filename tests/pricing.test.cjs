@@ -1,0 +1,20 @@
+const {test}=require('node:test'),assert=require('node:assert/strict'),fs=require('node:fs'),os=require('node:os'),path=require('node:path');
+const {quote,validate}=require('../server/pricing.cjs'),{createServer}=require('../server/server.cjs');
+const rates=()=>({sheetPrice:100,sheetLength:3660,sheetWidth:1830,wastePercent:15,topPrice:10,hingePrice:1,guidePrice:2,hangerPrice:1,legPrice:1,hdfPrice:null,edgePrice:null,cutPrice:5,markupPercent:100,rangePercent:15,rounding:100,hardware:{}});
+const project=()=>globalThis.KitchenCalc.defaults();
+test('Sheets grouped by decor; sawing per sheet; work 100%; range encloses total',()=>{const q=quote(project(),rates()),sheets=q.lines.filter(l=>l.name.startsWith('ЛДСП ·'));assert.equal(sheets.length,2);assert.equal(q.lines.find(l=>l.name==='Распил').quantity,sheets.reduce((s,l)=>s+l.quantity,0));assert.equal(q.work,q.materials);assert.equal(q.total,q.materials*2);assert.ok(q.min<=q.total&&q.max>=q.total);assert.equal(q.min%100,0);assert.equal(q.max%100,0);assert.ok(q.missing.includes('ХДФ'));});
+test('Invalid price and invalid kitchen rejected',()=>{assert.throws(()=>validate({...rates(),sheetPrice:-1}));assert.throws(()=>quote({...project(),modules:[]},rates()));assert.throws(()=>quote(null,rates()));});
+test('Known hardware prices remove missing entries',()=>{const p=project(),r=rates();r.hdfPrice=1;r.edgePrice=1;for(const h of globalThis.KitchenCalc.calculate(p).hardware)r.hardware[h.name]=1;assert.equal(quote(p,r).incomplete,false);});
+test('API hides rates, authenticates edits, persists rates, serves kitchen, revokes session',async t=>{
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'pricing-test-')),file=path.join(dir,'private.json');fs.writeFileSync(file,JSON.stringify(rates()));const server=createServer({priceFile:file,password:'test-only-long-password',secure:false});await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));t.after(()=>{server.close();fs.rmSync(dir,{recursive:true,force:true});});const base='http://127.0.0.1:'+server.address().port;
+ const req=(url,body,cookie)=>fetch(base+url,{method:body===undefined?'GET':'POST',headers:{'Content-Type':'application/json',...(cookie?{Cookie:cookie}:{})},body:body===undefined?undefined:JSON.stringify(body)});
+ assert.equal((await req('/api/prices')).status,401);assert.equal((await req('/api/prices',rates())).status,401);
+ const q=await (await req('/api/quote',{project:project()})).json();assert.deepEqual(Object.keys(q).sort(),['currency','incomplete','max','min']);
+ assert.equal((await req('/api/login',{password:'wrong'})).status,401);
+ const login=await req('/api/login',{password:'test-only-long-password'}),cookie=login.headers.get('set-cookie').split(';')[0];assert.match(login.headers.get('set-cookie'),/HttpOnly; SameSite=Strict/);
+ const r=await(await req('/api/prices',undefined,cookie)).json();r.rates.sheetPrice=150;assert.equal((await req('/api/prices',r.rates,cookie)).status,200);assert.equal(JSON.parse(fs.readFileSync(file)).sheetPrice,150);
+ assert.ok((await(await req('/api/owner-quote',{project:project()},cookie)).json()).materials>0);
+ assert.equal((await fetch(base+'/api/prices',{method:'POST',headers:{Origin:'https://evil.example',Cookie:cookie},body:JSON.stringify(rates())})).status,403);
+ assert.equal((await req('/server/pricing.cjs')).status,404);assert.equal((await req('/.git/config')).status,404);assert.match(await(await req('/kitchen/')).text(),/price-range/);
+ await req('/api/logout',{},cookie);assert.equal((await req('/api/prices',undefined,cookie)).status,401);
+});

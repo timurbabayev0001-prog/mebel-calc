@@ -4,6 +4,7 @@
   const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]);
   const num = value => Number(value).toLocaleString('ru-RU', { maximumFractionDigits: 2 });
   const expanded = new Set();
+  let priceTimer, priceRequest = 0;
   let project = KitchenCalc.defaults(), step = 'modules', result, selected = null, filter = '', saveTimer, toastTimer;
   const types = { doors:'Шкаф с дверями', drawers:'Выдвижные ящики', open:'Открытые полки', sink:'Под мойку', oven:'Под духовку', dishwasher:'Посудомоечная машина', blind:'Угловой · глухой угол' };
   const roles = { body:'Корпус', lower:'Нижние фасады и цоколь', upper:'Верхние фасады', top:'Столешница', backsplash:'Фартук', wall:'Стены', floor:'Пол', ceiling:'Потолок' };
@@ -64,8 +65,28 @@
     $('metrics').innerHTML = [['Модули',result.totals?.modules],['Детали',result.totals?.count],['Материалы, м²',result.totals?.area],['Кромка, м',result.totals?.edge]].map(([name,v])=>`<div><b>${v===undefined?'—':num(v)}</b><span>${name}</span></div>`).join('');
     $('errors').hidden=valid;$('errors').innerHTML=result.errors.map(message=>`<p>${esc(message)}</p>`).join('');
     for (const id of ['csv','print','image']) $(id).disabled=!valid;
-    renderSpec(); refreshHints(); refreshSwatches();
+    renderSpec(); refreshHints(); refreshSwatches(); refreshPrice();
     clearTimeout(saveTimer);saveTimer=setTimeout(()=>{try{localStorage.setItem(key,JSON.stringify(project));$('save-status').textContent='Сохранено на этом устройстве';}catch{$('save-status').textContent='Память браузера недоступна или заполнена. Сохраните проект в файл.';}},350);
+  }
+  function refreshPrice() {
+    clearTimeout(priceTimer); const request = ++priceRequest;
+    $('price-range').textContent = result.errors.length ? 'Исправьте размеры' : 'Считаем стоимость…';
+    $('price-note').textContent = 'Точная цена — после замера и согласования материалов.';
+    if (result.errors.length) return;
+    priceTimer = setTimeout(async () => {
+      try {
+        const response = await fetch('/api/quote', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({project})});
+        if (!response.ok) throw Error(); const q = await response.json();
+        if (request !== priceRequest) return;
+        if (!Number.isFinite(q.min) || !Number.isFinite(q.max) || q.currency !== 'AZN') throw Error();
+        $('price-range').textContent = `Примерно ${num(q.min)}–${num(q.max)} ₼`;
+        $('price-note').textContent = q.incomplete ? 'Предварительная оценка: часть расходов ещё не учтена. Точная цена — после замера и согласования материалов.' : 'Точная цена — после замера и согласования материалов.';
+      } catch {
+        if (request !== priceRequest) return;
+        $('price-range').textContent = 'Расчёт цены временно недоступен';
+        $('price-note').textContent = 'Проектирование кухни доступно. Для оценки стоимости свяжитесь с владельцем.';
+      }
+    }, 450);
   }
   function renderSpec() {
     if(result.errors.length){$('spec-content').innerHTML='<p class="muted">Исправьте указанные размеры. Общая спецификация появится после проверки всех модулей.</p>';return;}

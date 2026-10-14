@@ -1,12 +1,12 @@
 (function (root) {
   'use strict';
-  const defaults = () => ({ version: 5, layout: 'straight', room: { width: 3800, depth: 3000, height: 2700 }, lowerHeight: 720, upperHeight: 720, lowerDepth: 560, upperDepth: 320, legHeight: 100, backsplashHeight: 600, backsplashPattern: 'tile', thickness: 16, frontThickness: 18, topThickness: 38, frontGap: 2, shelfGap: 1, shelfInset: 20, guideGap: 12.5, guideLength: 450, backThickness: 3, railWidth: 80, cornerClearance: 60, overhang: 40, hingesPerDoor: 2, bodyPoints: 2, bodyFixing: 'confirmat', handles: 'bar', handleColor: 'black', toeKick: true, light: { mode: 'day', intensity: 1, led: true, ledColor: 'warm', ceiling: false }, decors: { body: { id: 'white' }, lower: { id: 'cashmere' }, upper: { id: 'white' }, top: { id: 'oak' }, backsplash: { id: 'white' }, wall: { id: 'cashmere' }, floor: { id: 'oak' }, ceiling: { id: 'white' } }, modules: [
+  const defaults = () => ({ version: 5, layout: 'straight', room: { width: 3800, depth: 3000, height: 2700 }, lowerHeight: 720, upperHeight: 720, lowerDepth: 560, upperDepth: 320, legHeight: 100, backsplashHeight: 600, backsplashPattern: 'tile', thickness: 18, frontThickness: 18, topThickness: 40, frontGap: 2, shelfGap: 1, shelfInset: 20, guideGap: 12.5, guideLength: 450, backThickness: 3, railWidth: 80, cornerClearance: 60, overhang: 40, hingesPerDoor: 2, bodyPoints: 2, bodyFixing: 'confirmat', handles: 'bar', handleColor: 'black', toeKick: true, light: { mode: 'day', intensity: 1, led: true, ledColor: 'warm', ceiling: false }, decors: { body: { id: 'white' }, lower: { id: 'cashmere' }, upper: { id: 'white' }, top: { id: 'oak' }, backsplash: { id: 'white' }, wall: { id: 'cashmere' }, floor: { id: 'oak' }, ceiling: { id: 'white' } }, modules: [
     { id: 'n1', level: 'lower', run: 'A', name: 'Мойка', type: 'sink', width: 600, shelves: 0, doors: 2, drawers: 3, legs: 4 },
     { id: 'n2', level: 'lower', run: 'A', name: 'Ящики', type: 'drawers', width: 600, shelves: 0, doors: 1, drawers: 3, legs: 4 },
     { id: 'n3', level: 'lower', run: 'A', name: 'Духовка', type: 'oven', width: 600, shelves: 0, doors: 1, drawers: 3, legs: 4, nicheHeight: 600 },
     { id: 'n4', level: 'lower', run: 'A', name: 'Шкаф', type: 'doors', width: 600, shelves: 1, doors: 1, drawers: 3, legs: 4 },
     ...Array.from({ length: 4 }, (_, i) => ({ id: 'u' + (i + 1), level: 'upper', run: 'A', name: 'Верхний шкаф', type: 'doors', width: 600, shelves: 1, doors: 1, drawers: 3, legs: 0 }))
-  ], tops: [{ id: 't1', run: 'A', auto: true, start: 0, length: 2400, depth: 600, thickness: 38 }], hardware: [] });
+  ], tops: [{ id: 't1', run: 'A', auto: true, start: 0, length: 2400, depth: 600, thickness: 40 }], hardware: [] });
   function calculate(project) {
     const errors = [], warnings = [], parts = [], hardware = [], modules = [], tops = [];
     const fail = message => errors.push(message);
