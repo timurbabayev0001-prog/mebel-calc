@@ -9,10 +9,11 @@
   <link rel="stylesheet" href="styles.css">
   <script defer src="calculator.js"></script>
   <script defer src="catalog.js"></script>
+  <script defer src="joinery.js"></script>
   <script defer src="app.js"></script>
 </head>
 <body>
-  <header class="header"><a class="brand" href="./"><span class="logo" aria-hidden="true">▥</span>МебельКальк</a><span class="version">Версия 0.3</span></header>
+  <header class="header"><a class="brand" href="./"><span class="logo" aria-hidden="true">▥</span>МебельКальк</a><span class="version">Версия 0.4</span></header>
   <main>
     <div class="intro"><p class="eyebrow">ОТ РАЗМЕРОВ К ДЕТАЛЯМ</p><h1>Ваш корпус.<br><span>Точный расчёт.</span></h1><p>Соберите комплектацию: секции, полки, двери и ящики. Декоры, столешница и выбранная фурнитура — в одной спецификации.</p></div>
     <div class="workspace">
@@ -51,6 +52,7 @@
             <div id="drawer-settings"></div>
             <div class="field"><label for="drawerThickness">Толщина стенок ящика</label><select id="drawerThickness" name="drawerThickness"><option value="16">16 мм</option><option value="18">18 мм</option></select></div>
           </details>
+          <details open><summary>Крепёж и сверление</summary><div id="joinery-settings"></div><p class="muted">Корпус: 4 соединения верха/низа с боковинами и по 2 на перегородку. Полки: по 2 соединения; количество крепежей на каждом соединении задаётся вами. Крепёж ящиков, фасадов, задней стенки и столешницы добавляйте в фурнитуру отдельно.</p><label class="check"><input type="checkbox" name="drilling"> Построить схемы сверления</label><div id="drill-settings"><p class="muted">Введите размеры по инструкции выбранной модели. Пустые параметры блокируют схемы, но не спецификацию. Шаблон строит цилиндрические отверстия; зенковка, ступенчатое сверление и оснастка требуют отдельного согласования.</p><div class="field"><label for="drillExample">Справочный шаблон эксцентрика</label><select id="drillExample"><option value="custom">Своя модель / Ø16 мм</option><option value="minifix16">Minifix 15 для плиты 16 мм</option><option value="minifix18">Minifix 15 для плиты 18 мм</option></select></div><div id="drill-fields"></div><p class="muted">Minifix: проверены только Ø чашки и номинальная глубина по каталогу. Отступ 24/34 мм и отверстия под шток зависят от выбранного штока. Для Rastex используйте его собственную инструкцию.</p><a class="source-link" href="https://files.hafele.co.uk/catalogfiles/www/14CFC294.pdf" target="_blank" rel="noopener">Каталог Minifix и чертёж</a> · <a class="source-link" href="https://shop.hettich.com/gb_EN/p/73456" target="_blank" rel="noopener">Rastex для плиты 16 мм</a></div></details>
           <details open><summary>Цвета и декоры</summary><p class="muted">Выберите образец или загрузите фотографию своего декора. Название и код декора попадут в спецификацию. Цвета образцов условные.</p><div id="decor-settings"></div></details>
           <details><summary>Столешница</summary><label class="check"><input type="checkbox" name="countertop"> Добавить столешницу</label><div id="countertop-settings"></div><p class="muted">Размеры столешницы задаются отдельно и не меняют наружные размеры корпуса. Припуски и свесы включите в её размеры. Кромка столешницы отдельно не рассчитывается.</p></details>
           <details open><summary>Ручки и другая фурнитура</summary><p class="muted">Ручки, петли, направляющие, ножки, крепёж или другая позиция. Выберите количество вручную либо на каждый фасад, дверь или ящик. Фото и артикул помогут сохранить конкретную модель.</p><div id="hardware-settings"></div><button id="add-hardware" class="secondary" type="button">+ Добавить фурнитуру</button></details>
@@ -75,13 +77,14 @@
           <ul id="materials" class="material-list"></ul>
           <p class="muted">* Кромка: число сторон по длине / по ширине. Площадь — сумма деталей без запаса и раскладки по листам.</p>
           <div class="actions"><button id="download-csv" class="secondary" type="button">Скачать CSV</button><button id="print" class="secondary" type="button">Печать / PDF</button></div>
+          <section id="drilling-result" class="drilling-result"><h3>Схемы сверления</h3><p id="drilling-status" role="status" class="muted"></p><div id="drilling-panels"></div><button type="button" id="download-drilling" class="secondary" hidden>Скачать отверстия CSV</button></section>
           <div id="warnings" class="warnings"></div>
           <div class="construction"><div class="drawing" aria-hidden="true"><div class="panel top"></div><div class="panel bottom"></div></div><div><h3>Простая и понятная конструкция</h3><p>Боковины — полной высоты. Верх и низ — между боковинами.</p><p class="formula" id="formula"></p></div></div>
         </div>
         <div id="empty-state" hidden><span aria-hidden="true">↖</span><h3>Проверьте размеры</h3><p>Исправьте выделенные поля — спецификация появится автоматически.</p></div>
       </section>
     </div>
-    <aside class="scope-note"><span aria-hidden="true">ⓘ</span><p>Расчёт для прямоугольного корпуса с вертикальными секциями. Угловые корпуса, двери-купе, металлические системы ящиков, сверловка и подбор совместимости фурнитуры пока не рассчитываются. Для нестандартных элементов используйте дополнительные детали.</p></aside>
+    <aside class="scope-note"><span aria-hidden="true">ⓘ</span><p>Расчёт для прямоугольного корпуса с вертикальными секциями. Угловые корпуса, двери-купе, металлические системы ящиков, сверление под ручки, петли и направляющие, а также подбор совместимости фурнитуры пока не рассчитываются. Для нестандартных элементов используйте дополнительные детали.</p></aside>
     <section class="project-tools card"><h2>Ваш проект</h2><p class="muted">Настройки сохраняются в этом браузере. Скачайте проект, чтобы перенести его на другое устройство.</p><div class="actions"><button id="save-project" class="secondary" type="button">Скачать проект</button><label class="file-button">Открыть проект<input id="import-project" type="file" accept=".json,application/json"></label></div><p id="project-status" role="status" class="muted"></p></section>
   </main>
   <footer><span>МебельКальк</span><span>Меньше подсчётов. Больше творчества.</span></footer>

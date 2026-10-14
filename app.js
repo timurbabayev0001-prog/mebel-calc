@@ -8,6 +8,7 @@ let currentResult;
 let decorState = {};
 let hardwareImages = [];
 const catalog = window.MebelCatalog;
+const joinery = window.MebelJoinery;
 const fmt = value => new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 3 }).format(value);
 function field(parent, key, title, value, options) {
   const wrapper = document.createElement('div');
@@ -19,7 +20,7 @@ function field(parent, key, title, value, options) {
   if (options) for (const [v, text] of options) {
     const option = document.createElement('option'); option.value = v; option.textContent = text; input.append(option);
   }
-  else { input.type = 'text'; input.inputMode = key.startsWith('extraName') || key.startsWith('extramaterial') || /^(hardwareName|hardwareArticle|hardwareNote|decorName|countertopMaterial)/.test(key) ? 'text' : 'decimal'; }
+  else { input.type = 'text'; input.inputMode = key.startsWith('extraName') || key.startsWith('extramaterial') || /^(hardwareName|hardwareArticle|hardwareNote|decorName|countertopMaterial|fixingArticle|bodyArticle|shelfArticle|shelfLevels)/.test(key) ? 'text' : 'decimal'; }
   input.value = value;
   input.setAttribute('aria-describedby', `${key}-error`);
   const error = document.createElement('p'); error.id = `${key}-error`; error.className = 'error';
@@ -43,6 +44,7 @@ function renderSections(sections) {
     const width = field(card, `sectionWidth${i}`, 'Чистая ширина секции, мм', section.width ?? 300);
     width.closest('.field').classList.add('custom-width');
     field(card, `shelves${i}`, 'Количество полок', section.shelves ?? 0);
+    field(card, `shelfLevels${i}`, 'Уровни полок для сверления, мм (через ;)', section.shelfLevels ?? '');
     field(card, `front${i}`, 'Передняя часть', section.front ?? 'none', [['none', 'Открытая секция'], ['doors', 'Распашные двери'], ['drawers', 'Выдвижные ящики']]);
     field(card, `doors${i}`, 'Количество дверей', section.doors ?? 1);
     field(card, `drawers${i}`, 'Количество ящиков', section.drawers ?? 1);
@@ -174,11 +176,82 @@ function renderCatalogResult(result) {
     for (const value of [item.article || '—', item.note || '—', `${item.quantity} ${item.unit}`]) { const cell = document.createElement('td'); cell.textContent = value; row.append(cell); }
     host.append(row);
   });
-  document.querySelector('#hardware-empty').textContent = result.hardware.length ? 'Автоматическое количество зависит от числа фасадов, дверей и ящиков. Нулевая позиция означает, что соответствующих деталей в проекте нет.' : 'Фурнитура пока не добавлена.';
+  document.querySelector('#hardware-empty').textContent = result.hardware.length ? 'Автоматическое количество зависит от числа фасадов, дверей, ящиков и соединений корпуса/полок. Нулевая позиция означает, что соответствующих деталей в проекте нет.' : 'Фурнитура пока не добавлена.';
 }
+field(document.querySelector('#joinery-settings'), 'bodyFixing', 'Крепление корпуса и перегородок', 'none', joinery.methods);
+field(document.querySelector('#joinery-settings'), 'bodyPoints', 'Крепежей на одно соединение корпуса', 2);
+field(document.querySelector('#joinery-settings'), 'shelfFixing', 'Крепление полок', 'none', [...joinery.methods, ['supports', 'Съёмные полки · полкодержатели']]);
+field(document.querySelector('#joinery-settings'), 'shelfPoints', 'Крепежей / держателей с каждой стороны полки', 2);
+field(document.querySelector('#joinery-settings'), 'bodyArticle', 'Модель / артикул крепежа корпуса', '');
+field(document.querySelector('#joinery-settings'), 'shelfArticle', 'Модель / артикул крепежа полок', '');
+const drillFields = [
+  ['drillOffset', 'Отступ крайних точек от переднего и заднего края, мм', 50],
+  ['screwThrough', 'Шуруп: сквозное отверстие, Ø мм', ''], ['screwPilot', 'Шуруп: торцевое отверстие под резьбу, Ø мм', ''], ['screwDepth', 'Шуруп: глубина торцевого отверстия, мм', ''],
+  ['throughDiameter', 'Конфирмат: сквозное отверстие, Ø мм', ''], ['pilotDiameter', 'Конфирмат: торцевое отверстие под резьбу, Ø мм', ''], ['pilotDepth', 'Конфирмат: глубина торцевого отверстия, мм', ''],
+  ['dowelDiameter', 'Шкант: отверстие, Ø мм', 8], ['dowelFaceDepth', 'Шкант: глубина в плоскости, мм', ''], ['dowelEndDepth', 'Шкант: глубина в торце, мм', ''], ['dowelOffset', 'Комбинация: отступ шкантов от края по глубине, мм', ''],
+  ['camDiameter', 'Эксцентрик: чашка, Ø мм', ''], ['camDepth', 'Эксцентрик: глубина чашки, мм', ''], ['camEdge', 'Эксцентрик: центр чашки от торца, мм', ''],
+  ['camEntryDiameter', 'Эксцентрик: торцевой вход штока, Ø мм', ''], ['camPinDiameter', 'Эксцентрик: отверстие под шток в ответной детали, Ø мм', ''], ['camPinDepth', 'Эксцентрик: глубина под шток, мм', ''],
+  ['supportDiameter', 'Полкодержатель: отверстие, Ø мм', ''], ['supportDepth', 'Полкодержатель: глубина, мм', '']
+];
+for (const args of drillFields) field(document.querySelector('#drill-fields'), ...args);
+document.querySelector('#drillExample').addEventListener('change', event => {
+  if (event.target.value !== 'custom') { form.elements.camDiameter.value = 15; form.elements.camDepth.value = event.target.value === 'minifix16' ? 12.5 : 13.5; }
+  update();
+});
+function svgNode(tag, attrs = {}, text) {
+  const node = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  for (const [key, value] of Object.entries(attrs)) node.setAttribute(key, value);
+  if (text !== undefined) node.textContent = text;
+  return node;
+}
+function renderDrilling(result) {
+  const host = document.querySelector('#drilling-panels'); host.replaceChildren();
+  const state = result.drilling || { errors: {}, panels: [] };
+  const enabled = form.elements.drilling.checked;
+  document.querySelector('#drilling-status').textContent = !enabled ? 'Включите схемы в блоке «Крепёж и сверление».' : Object.keys(state.errors).length ? Object.values(state.errors).join(' ') : 'X — по длине от начала детали, Y — от переднего края. Торцевые отверстия: Z = половина толщины. Числа в таблице — размеры, SVG — обзорная схема, не шаблон масштаба 1:1.';
+  document.querySelector('#download-drilling').hidden = !enabled || !state.panels.length;
+  for (const [key, message] of Object.entries(state.errors)) {
+    const input = document.getElementById(key), error = document.getElementById(`${key}-error`);
+    if (input) { input.setAttribute('aria-invalid', 'true'); input.closest('details')?.setAttribute('open', ''); }
+    if (error) error.textContent = message;
+  }
+  if (!enabled || Object.keys(state.errors).length) return;
+  const legend = document.createElement('p'); legend.className = 'muted'; legend.textContent = 'Плоскость A: внутренняя сторона боковин, нижняя сторона верха, верхняя сторона низа/полки, сторона перегородки к секции справа. B — обратная. X=0 у вертикальных деталей сверху, у горизонтальных слева. Вид B также показан в системе координат A: при перевороте используйте координаты A, не зеркальте их повторно.'; host.append(legend);
+  state.panels.forEach(panel => {
+    const card = document.createElement('details'); card.className = 'drill-panel';
+    const title = document.createElement('summary'); title.textContent = `${panel.name} · ${fmt(panel.length)} × ${fmt(panel.depth)} мм · ${panel.holes.length} отверстий`; card.append(title);
+    const svg = svgNode('svg', { viewBox: '0 0 640 270', role: 'img', 'aria-label': `Отверстия: ${panel.name}` });
+    const scale = Math.min(560 / panel.length, 190 / panel.depth);
+    const width = panel.length * scale, height = panel.depth * scale;
+    svg.append(svgNode('rect', { x: 40, y: 40, width, height, fill: '#f3f5ed', stroke: '#235a49' }));
+    svg.append(svgNode('text', { x: 40, y: 23, 'font-size': 12 }, `X → ${fmt(panel.length)} мм; Y ↓ ${fmt(panel.depth)} мм`));
+    panel.holes.forEach((hole, i) => {
+      const x = 40 + hole.x * scale, y = 40 + hole.y * scale;
+      const color = hole.surface.startsWith('Торец') ? '#b15d25' : hole.surface === 'Плоскость B' ? '#6852a0' : '#235a49';
+      const circle = svgNode('circle', { cx: x, cy: y, r: Math.max(3, hole.diameter * scale / 2), fill: 'none', stroke: color, 'stroke-width': 1.5 });
+      circle.append(svgNode('title', {}, `№${i + 1}: ${hole.surface}, X=${fmt(hole.x)}, Y=${fmt(hole.y)}, Ø${fmt(hole.diameter)}, глубина ${fmt(hole.depth)}`));
+      svg.append(circle, svgNode('text', { x: x + 5, y: y - 5, fill: color, 'font-size': 10 }, i + 1));
+    });
+    card.append(svg);
+    const wrap = document.createElement('div'); wrap.className = 'table-wrap';
+    const table = document.createElement('table'), head = document.createElement('thead'), header = document.createElement('tr');
+    for (const text of ['№ / сторона', 'X / Y / Z, мм', 'Ø / глубина, мм', 'Назначение']) { const cell = document.createElement('th'); cell.scope = 'col'; cell.textContent = text; header.append(cell); }
+    head.append(header); table.append(head);
+    const body = document.createElement('tbody');
+    panel.holes.forEach((hole, i) => { const row = document.createElement('tr'); for (const text of [`${i + 1} · ${hole.surface}`, `${fmt(hole.x)} / ${fmt(hole.y)} / ${hole.z === null ? '—' : fmt(hole.z)}`, `${fmt(hole.diameter)} / ${fmt(hole.depth)}`, hole.purpose]) { const cell = document.createElement('td'); cell.textContent = text; row.append(cell); } body.append(row); });
+    table.append(body); wrap.append(table); card.append(wrap); host.append(card);
+  });
+}
+document.querySelector('#download-drilling').addEventListener('click', () => {
+  if (!currentResult?.drilling?.panels.length) return;
+  const rows = [['Деталь', '№', 'Сторона', 'X, мм', 'Y, мм', 'Z, мм', 'Диаметр, мм', 'Глубина, мм', 'Назначение']];
+  currentResult.drilling.panels.forEach(panel => panel.holes.forEach((hole, i) => rows.push([panel.name, i + 1, hole.surface, hole.x, hole.y, hole.z ?? '', hole.diameter, hole.depth, hole.purpose])));
+  const csv = '\ufeff' + rows.map(row => row.map(v => '"' + String(v).replaceAll('"', '""') + '"').join(';')).join('\r\n');
+  download('mebel-calc-drilling.csv', csv, 'text/csv;charset=utf-8');
+});
 function read() {
   const values = Object.fromEntries(new FormData(form));
-  values.sections = [...sectionHost.children].map((_, i) => ({ width: values[`sectionWidth${i}`], shelves: values[`shelves${i}`], front: values[`front${i}`], doors: values[`doors${i}`], drawers: values[`drawers${i}`] }));
+  values.sections = [...sectionHost.children].map((_, i) => ({ width: values[`sectionWidth${i}`], shelves: values[`shelves${i}`], shelfLevels: values[`shelfLevels${i}`], front: values[`front${i}`], doors: values[`doors${i}`], drawers: values[`drawers${i}`] }));
   values.extras = [...extraHost.children].map((_, i) => ({ name: values[`extraName${i}`], length: values[`extralength${i}`], depth: values[`extradepth${i}`], thickness: values[`extrathickness${i}`], material: values[`extramaterial${i}`], quantity: values[`extraQuantity${i}`], edgeLong: values[`extraedgeLong${i}`], edgeShort: values[`extraedgeShort${i}`], decor: values[`extraDecor${i}`] }));
   values.decors = Object.fromEntries(catalog.roles.map(role => [role, { id: values[`decorSelect${role}`], name: values[`decorName${role}`], image: decorState[role]?.image || '' }]));
   values.hardware = [...document.querySelector('#hardware-settings').children].map((_, i) => ({ name: values[`hardwareName${i}`], article: values[`hardwareArticle${i}`], note: values[`hardwareNote${i}`], quantity: values[`hardwareQuantity${i}`], basis: values[`hardwareBasis${i}`], unit: values[`hardwareUnit${i}`], image: hardwareImages[i] || '' }));
@@ -188,7 +261,7 @@ function update() {
   const values = read();
   const count = Number(values.sectionCount);
   const countValid = /^\d+$/.test(String(values.sectionCount)) && count >= 1 && count <= 12;
-  const result = catalog.configure(values, window.MebelCalc.calculateProject(values));
+  const result = joinery.apply(values, catalog.configure(values, window.MebelCalc.calculateProject(values)));
   if (!countValid || count !== values.sections.length) { result.errors.sectionCount = countValid ? 'Примените количество секций: завершите ввод или нажмите «Рассчитать проект».' : 'Введите целое количество секций от 1 до 12.'; result.parts = []; }
   currentResult = result;
   document.querySelectorAll('.error').forEach(e => { e.textContent = ''; });
@@ -211,7 +284,14 @@ function update() {
     document.getElementById(`drawers${i}`).closest('.field').hidden = values.sections[i].front !== 'drawers';
   });
   syncDecor();
-  try { localStorage.setItem('mebel-calc-v03', JSON.stringify({ version: 3, values })); } catch { projectStatus.textContent = 'Не удалось сохранить проект в браузере: возможно, фотографии заняли доступное место. Нажмите «Скачать проект», чтобы сохранить всё в файл.'; }
+  document.querySelector('#drill-settings').hidden = !form.elements.drilling.checked;
+  const methods = [values.bodyFixing, values.shelfFixing].join(' ');
+  for (const [key] of drillFields) {
+    const show = key === 'drillOffset' || (key.startsWith('screw') && methods.includes('screw')) || (['throughDiameter','pilotDiameter','pilotDepth'].includes(key) && methods.includes('confirmat')) || (key.startsWith('dowel') && methods.includes('dowel') && (key !== 'dowelOffset' || methods.includes('_dowel'))) || (key.startsWith('cam') && methods.includes('eccentric')) || (key.startsWith('support') && methods.includes('supports'));
+    document.getElementById(key).closest('.field').hidden = !show;
+  }
+  document.getElementById('drillExample').closest('.field').hidden = !methods.includes('eccentric');
+  try { localStorage.setItem('mebel-calc-v04', JSON.stringify({ version: 4, values })); } catch { projectStatus.textContent = 'Не удалось сохранить проект в браузере: возможно, фотографии заняли доступное место. Нажмите «Скачать проект», чтобы сохранить всё в файл.'; }
   const rows = document.querySelector('#parts'); rows.replaceChildren();
   if (!valid) return;
   document.querySelector('#dimensions').textContent = `${fmt(result.dimensions.width)} × ${fmt(result.dimensions.height)} × ${fmt(result.dimensions.depth)} мм`;
@@ -230,6 +310,7 @@ function update() {
   const materials = document.querySelector('#materials'); materials.replaceChildren();
   for (const material of result.totals.materials) { const item = document.createElement('li'); item.textContent = `${material.name}: ${fmt(material.area)} м²`; materials.append(item); }
   renderCatalogResult(result);
+  renderDrilling(result);
   const warnings = document.querySelector('#warnings'); warnings.replaceChildren();
   for (const warning of result.warnings) { const p = document.createElement('p'); p.textContent = warning; warnings.append(p); }
 }
@@ -257,10 +338,15 @@ function download(name, content, type) {
 document.querySelector('#download-csv').addEventListener('click', () => {
   if (currentResult && !Object.keys(currentResult.errors).length) download('mebel-calc-specification.csv', catalog.csv(currentResult), 'text/csv;charset=utf-8');
 });
-document.querySelector('#print').addEventListener('click', () => window.print());
-document.querySelector('#save-project').addEventListener('click', () => download('mebel-calc-project.json', JSON.stringify({ version: 3, values: read() }, null, 2), 'application/json'));
+document.querySelector('#print').addEventListener('click', () => {
+  const panels = [...document.querySelectorAll('.drill-panel')];
+  const open = panels.map(p => p.open); panels.forEach(p => { p.open = true; });
+  window.addEventListener('afterprint', () => panels.forEach((p, i) => { p.open = open[i]; }), { once: true });
+  window.print();
+});
+document.querySelector('#save-project').addEventListener('click', () => download('mebel-calc-project.json', JSON.stringify({ version: 4, values: read() }, null, 2), 'application/json'));
 function restore(project) {
-  if (![2, 3].includes(project?.version) || !project.values || !Array.isArray(project.values.sections) || project.values.sections.length < 1 || project.values.sections.length > 12 || !Array.isArray(project.values.extras) || project.values.extras.length > 100 || project.values.sections.some(s => !s || typeof s !== 'object') || project.values.extras.some(s => !s || typeof s !== 'object')) throw new Error('Неверный формат проекта. Откройте JSON проекта версии 0.2 или 0.3.');
+  if (![2, 3, 4].includes(project?.version) || !project.values || !Array.isArray(project.values.sections) || project.values.sections.length < 1 || project.values.sections.length > 12 || !Array.isArray(project.values.extras) || project.values.extras.length > 100 || project.values.sections.some(s => !s || typeof s !== 'object') || project.values.extras.some(s => !s || typeof s !== 'object')) throw new Error('Неверный формат проекта. Откройте JSON проекта версии 0.2, 0.3 или 0.4.');
   const v = project.values;
   if (v.hardware !== undefined && (!Array.isArray(v.hardware) || v.hardware.length > 30 || v.hardware.some(item => !item || typeof item !== 'object'))) throw new Error('Некорректный список фурнитуры.');
   // Reset all globals so omitted imported values do not inherit another project.
@@ -283,5 +369,5 @@ document.querySelector('#import-project').addEventListener('change', async event
   event.target.value = '';
 });
 renderSections([{}]); renderExtras([]); renderDecor(); renderHardware([]);
-try { const saved = localStorage.getItem('mebel-calc-v03') || localStorage.getItem('mebel-calc-v02'); if (saved) restore(JSON.parse(saved)); } catch { projectStatus.textContent = 'Сохранённый проект не удалось восстановить. Открыт новый проект.'; }
+try { const saved = localStorage.getItem('mebel-calc-v04') || localStorage.getItem('mebel-calc-v03') || localStorage.getItem('mebel-calc-v02'); if (saved) restore(JSON.parse(saved)); } catch { projectStatus.textContent = 'Сохранённый проект не удалось восстановить. Открыт новый проект.'; }
 update();
