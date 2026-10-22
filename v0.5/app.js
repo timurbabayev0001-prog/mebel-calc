@@ -4,6 +4,12 @@ const sectionHost = document.querySelector('#sections');
 const extraHost = document.querySelector('#extras');
 const status = document.querySelector('#status');
 const projectStatus = document.querySelector('#project-status');
+const updateCabinetPrice=MebelPrice.create(document.querySelector('#cabinet-price'),'cabinet');
+const cabinetView=new Cabinet3D.View(document.querySelector('#cabinet-scene'));
+document.querySelector('#cabinet-fit').onclick=()=>cabinetView.fit();
+document.querySelector('#cabinet-zoom-in').onclick=()=>{cabinetView.zoom=Math.min(4,cabinetView.zoom*1.2);cabinetView.draw();};
+document.querySelector('#cabinet-zoom-out').onclick=()=>{cabinetView.zoom=Math.max(.3,cabinetView.zoom/1.2);cabinetView.draw();};
+document.querySelector('#cabinet-open').onchange=e=>cabinetView.hideFronts=e.target.checked;
 let currentResult;
 let decorState = {};
 let hardwareImages = [];
@@ -273,6 +279,7 @@ function update() {
     if (error) error.textContent = message;
   }
   const valid = Object.keys(result.errors).length === 0;
+  updateCabinetPrice(values,valid);cabinetView.update(values,result,valid);
   document.querySelector('#result-content').hidden = !valid;
   document.querySelector('#empty-state').hidden = valid;
   status.classList.toggle('invalid', !valid);

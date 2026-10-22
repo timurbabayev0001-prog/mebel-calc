@@ -60,6 +60,11 @@
       if (article.length > 100 || note.length > 300) errors.hardware = 'Артикул: до 100 символов; примечание: до 300.';
       hardware.push({ name, article, note, quantity: quantity * (counts[basis] ?? 0), unit, basis, image: safeImage(item.image) });
     });
+    if(values.autoHardware === true || values.autoHardware === 'on'){
+      const add=(name,quantity,unit)=>{if(quantity>0)hardware.push({name,quantity,unit,article:'',note:'Автоматически: 2 петли на дверь, 1 комплект направляющих на ящик.',basis:'auto',image:''});};
+      if(!hardware.some(h=>/петл/i.test(h.name)))add('Петля мебельная',doors*2,'шт.');
+      if(!hardware.some(h=>/направляющ/i.test(h.name)))add('Боковые направляющие',drawers,'пар');
+    }
     if (Object.keys(errors).length) return { ...base, errors, parts: [], hardware: [], decors, totals: null };
     const materials = new Map();
     let area = 0, edge = 0, quantity = 0;
